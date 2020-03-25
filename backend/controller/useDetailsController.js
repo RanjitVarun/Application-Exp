@@ -2,34 +2,53 @@ const { sequelize } = require('./db')
 var user_details = sequelize.import('../models/user_details')
 const bcrypt = require('bcrypt');
 const saltRounds = 10;
-
+var userdeptrel=sequelize.import('../models/user_dept_relation');
+var dept=sequelize.import('../models/department')
+var role=sequelize.import('../models/role')
+var userolerel=sequelize.import('../models/user_role_relation');
 
 getUserDetails = {
     handler: async () => {
         var result = [];
-      //  if(request.pre.tokenresult.auth){
+        console.log('calling')
+      //  if(request.pre.tokenresult.auth){s
             await user_details.sequelize.sync().then(async function () {
                             await user_details.findAll({}).then((res) => {
-                                console.log(res);
+                                //console.log(res);
                                 res.map((a) => {
                                     result.push(a.dataValues)
                                 })
                 
                             })
                         })
-       // }
-       // else{
-         //   result.push({statusCode:404,msg:'cannot access user details'})
-       // }
+     
 
-return result
+return result;
 }
 }
+
+
+
+getWholeDetails = {
+    handler:async  (request, reply) => {
+        var result = [];
+        const [results] = await sequelize.query("select user_details.id, user_details.name,user_details.salary, user_details.password,department.dname,role.rname from user_details inner join user_role_relation on user_details.id=user_role_relation.user_id inner join role on user_role_relation.role_id=role.id inner join user_dept_relation on user_details.id=user_dept_relation.user_id inner join department on user_dept_relation.dept_id=department.id;")
+       console.log(results);
+        return results
+    }
+}
+
+
+// "select user_details.name,user_details.salary, user_details.password,department.dname,role.rname from user_details inner join user_role_relation on user_details.id=user_role_relation.user_id inner join role on user_role_relation.role_id=role.id inner join user_dept_relation on user_details.id=user_dept_relation.user_id inner join department on user_dept_relation.dept_id=department.id;"
+
+
+
+
 
 getUserDetailsById = {
     handler: async (request, reply) => {
         var result = [];
-        if(request.pre.tokenresult.auth){
+       // if(request.pre.tokenresult.auth){
         await user_details.sequelize.sync().then(async function () {
             await user_details.findAll({ where: { id: request.params.id } }).then((res) => {
                 res.map((a) => {
@@ -37,10 +56,10 @@ getUserDetailsById = {
                 })
 
             })
-        })}
-        else{
-            result.push({statusCode:404,msg:'cannot access user details'})
-        }
+        })
+       // else{
+       //     result.push({statusCode:404,msg:'cannot access user details'})
+       // }
         return result;
     }
 }
@@ -48,38 +67,74 @@ getUserDetailsById = {
 
 createUser = {
     handler: async (request, reply) => {
-        var result;
+       console.log(request.payload.user)
        
-        //console.log(request.payload.password)
-        await user_details.sequelize.sync().then(async function () {
-            await bcrypt.genSalt(saltRounds, function(err, salt) {
-              bcrypt.hash(request.payload.password, salt, async function(err, hash) {
-                    // Store hash in your password DB.
-                    await user_details.create({ name: request.payload.name, password: hash, email: request.payload.email }).then((res) => {
-               
-//console.log(res)
-                        result = { res}
+        var result=null;
+     
+     await user_details.sequelize.sync().then( async function () {
+
+            // await bcrypt.genSalt(saltRounds, async function(err, salt) {
+            // await bcrypt.hash(request.payload.password, salt, async function(err, hash) {
+            //       console.log(hash)
+                   
+                 await  user_details.create({ name: request.payload.user.name, password: request.payload.user.password ,role:request.payload.user.role,salary:request.payload.user.salary
+        }).then(async (res) => {
+              console.log('queried value')
+await user_details.findOne({where:{name:request.payload.user.name}}).then(async res=>{
+    console.log(res.dataValues.id)
+    var id=res.dataValues.id
+
+  await dept.findOne({where:{dname:request.payload.user.department}}).then(async res=>{
+      var depart=res.dataValues.id
+      
+    await  role.findOne({where:{rname:request.payload.user.role}}).then(async res=>{
+          console.log(res.dataValues);
+        //   console.log('here')
+     var userole=res.dataValues.id;
+        //  console.log(id, depart,userole)
+         await userdeptrel.create({user_id:id,dept_id:depart}).then(async res=>{
+        console.log(res.dataValues)
+await userolerel.create({user_id:id,role_id:userole}).then(res=>{
+    console.log('successfully inserted into relation tables')
+})
+         })
+      })
+    
+  })
+
+})
+
+                      result = {res}
         
                     }).catch(err => {
     // console.log(err)                
                         result={err}
                     })
+                
+                
+                
+                
+                
                 });
-            });
+          //  });
              
              
-        })
-console.log('first')
-     return result;
+      //  })
+     
+         result={statusCode:200}
+        return result;
+      
+
+ 
     }
 }
 
 deleteUser = {
     handler: async (request, reply) => {
         var result;
-        console.log(request.payload.name)
+        console.log(request.params.id)
         await user_details.sequelize.sync().then(async function () {
-            await user_details.destroy({ where: { name: request.payload.name } }).then((res) => {
+            await user_details.destroy({ where: { id: request.params.id } }).then((res) => {
                 console.log(res)
                 result = { statusCode: 200 }
 
@@ -136,6 +191,7 @@ module.exports = {
     getUserDetailsById,
     createUser,
     deleteUser,
+    getWholeDetails
    //loginUser
 
 }

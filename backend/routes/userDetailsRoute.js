@@ -27,6 +27,12 @@ module.exports = [
     }
 },
 
+{
+    method: 'GET',
+    path: '/userdetails/relation',
+    config: userDetailsController.getWholeDetails
+},
+
     {
         method: 'POST',
         path: '/userdetails/create',
@@ -35,7 +41,7 @@ module.exports = [
 
     {
         method: 'DELETE',
-        path: '/userdetails/delete',
+        path: '/userdetails/delete/{id}',
         config: userDetailsController.deleteUser
     },
     {
