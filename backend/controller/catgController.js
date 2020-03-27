@@ -25,7 +25,7 @@ createCategory = {
     handler: async (request, reply) => {
         var result;
         await category.sequelize.sync().then(async function () {
-            await category.create({ name: request.payload.name}).then((res) => {
+            await category.create({ cname: request.payload.name}).then((res) => {
                 console.log(res)
                 result = { statusCode: 200 }
 

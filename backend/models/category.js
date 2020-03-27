@@ -1,4 +1,4 @@
-/* jshint indent: 2 */
+
 
 module.exports = function(sequelize, DataTypes) {
   return sequelize.define('category', {
@@ -8,7 +8,7 @@ module.exports = function(sequelize, DataTypes) {
       primaryKey: true,
       autoIncrement: true
     },
-    name: {
+    cname: {
       type: DataTypes.STRING(255),
       allowNull: true
     }
